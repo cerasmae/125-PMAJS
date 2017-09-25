@@ -76,80 +76,9 @@ function SRPT(){
 	this.queue = [];
 
 	this.setQueue = function(processes){
-		var temp1 = [];
-		var processed = [];
-		var waiting = [];
 		for(var i = 0; i < processes.length; i++){
-			temp1.push(new Process(processes[i], color=randomColor({luminosity: 'light'})));
+			this.queue.push(new Process(processes[i], color=randomColor({luminosity: 'light'})));
 		}
-
-		processed.push(new Process(processes[0], color=temp1[0].color));
-		temp1.shift();
-
-		var group = _.groupBy(temp1, "arrival");
-		var temp_sort = [];
-
-		var current = processed[0];
-		var counter = current.burst_time;
-
-		for(let proc in group){
-			if(current.burst_time < 1){
-				--current.burst_time;
-				processed.push(new Process(processes[waiting[0].name-1], color=processes[waiting[0].name-1].color));
-				current = processed[processed.length-1];
-				waiting.shift();
-			} else{
-				--current.burst_time;
-			}
-			console.log(current.burst_time);
-			
-			temp_sort = group[proc].sort(function(a, b){
-				if(a.burst_time == b.burst_time){
-					return a.name - b.name;
-				} else{
-					return a.burst_time - b.burst_time;
-				}
-			});
-
-			for(var i = 0; i < temp_sort.length; i++){
-				if(current.burst_time > temp_sort[i].burst_time){
-					waiting.push(new Process(processes[current.name-1], color=current.color));
-					waiting[waiting.length-1].burst_time = current.burst_time;
-					processed.push(new Process(processes[temp_sort[i].name-1], color=temp_sort[i].color));
-					current = processed[processed.length-1];
-				} else{
-					waiting.push(new Process(processes[temp_sort[i].name-1], color=temp_sort[i].color));
-					waiting.sort(function(a, b){
-						if(a.burst_time == b.burst_time){
-							return a.name - b.name;
-						} else{
-							return a.burst_time - b.burst_time;
-						}
-					})
-				}
-			}
-			// console.log(temp_sort);
-		}
-		console.log("out");
-		console.log(processed.concat(waiting));
-
-		// for(var i = 1; i <= last; i++){
-		// 	for(var j = 0; j < group.length; j++){
-		// 		if(temp1[j].arrival <= i){
-		// 			if(temp1[j].arrival == i){ //newly arrived process
-		// 				if(temp1[j].burst_time < temp2[temp2.length-1].burst_time){
-
-		// 				} else {
-
-		// 				}
-		// 				temp2 
-		// 				temp1.slice(j, 1);
-		// 			}
-		// 		} else{
-		// 			break;
-		// 		}
-		// 	}
-		// }
 	}
 }
 
@@ -212,7 +141,7 @@ function RoundRobin(){
 	}
 }
 
-function drawResources(algorithms){
+function drawResources(algorithms, processes){
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	var height = canvas.height/10;
 	var width = 80;
@@ -235,7 +164,6 @@ function drawResources(algorithms){
 		if( algorithms[i].name == "RR" ){
 			var tempQ = algorithms[i].queue;
 			var k = 0;
-			var sum_rr = 0;
 			var count = [];
 			var final = [];
 
@@ -285,49 +213,127 @@ function drawResources(algorithms){
 			//console.log(count);
 			//console.log(final);
 			for(var j = 0; j < count.length; j++){
-				sum_rr += (final[j]-(count[j]*4));
+				sum_cpu += (final[j]-(count[j]*4));
 			}
-			ctx.fillText("AWT: "+sum_rr/20, queueX+(width/10), startY+(height/3) );
+			ctx.fillText("AWT: "+sum_cpu/20, queueX+(width/10), startY+(height/3) );
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 			startY+=height;
 			// //console.log(algorithms[i].queue);
 		} else if( algorithms[i].name == "SRPT" ){
-			// console.log("SRPT");
-			// var temp1 = algorithms[i].queue.slice();
-			// var temp2 = [];
-		
-			// var len = temp1.length-1;
-			// var last = temp1[len].arrival;
-			// ctx.fillStyle = temp1[0].color;
-			// ctx.fillRect(queueX+5, startY+5, width, height-20);
-			// ctx.fillStyle = "black";
-			// ctx.fillText("#"+temp1[0].name, queueX+(width/10), startY+(height/3) );
-			// ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
-			// ctx.fillText("RT: "+temp1[], queueX+(width/10), startY+(height/6) );
-			// // temp2.push(new Process(processes[0], color=temp1[0].color));
-			// // temp1.slice(0, 1);
-			// for(var i = 0; i < last; i++){
-			// 	for(var j = 0; j < temp1.length; j++){
-			// 		if(temp1[j].arrival <= i){
-			// 			if(temp1[j].arrival == i){ //newly arrived process
-			// 				if(temp1[j].burst_time < temp2[j].burst_time){
+			var processed = [];
+			var waiting = [];
+			var temp1 = algorithms[i].queue.slice();
+			var countS = [];
 
-			// 				}
-			// 				ctx.fillStyle = temp1[j].color;
-			// 				ctx.fillRect(queueX+5, startY+5, width, height-20);
-			// 				ctx.fillStyle = "black";
-			// 				ctx.fillText("#"+temp1[j].name, queueX+(width/10), startY+(height/3) );
-			// 				ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
-			// 				ctx.fillText("RT: 0", queueX+(width/10), startY+(height/6) );
-			// 				temp1.slice(j, 1);
-			// 			}
-			// 		} else{
-			// 			break;
-			// 		}
-			// 	}
-			// }
+			for(var a = 0; a < 20; a++){
+				countS[a] = 0;
+			}
+
+			processed.push(new Process(processes[0], color=temp1[0].color));
+			temp1.shift();
+
+			var group = _.groupBy(temp1, "arrival");
+			var temp_sort = [];
+
+			var current = processed[0];
+			var counter = 0;
+			// count[0]++;
+
+			for(let proc in group){
+				if(current.burst_time < 1){
+					console.log("curr:");
+					console.log(current);
+					ctx.fillStyle = current.color;
+					ctx.fillRect(queueX+5, startY+5, width, height-20);
+					ctx.fillStyle = "black";
+					ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
+					ctx.fillText("WT: "+ (queueTotal-counter), queueX+(width/12), startY+(height*0.80) );
+					ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
+					queueX+=width;
+					if(queueX > 2750){
+						startY+=height;
+						queueX = startX + width + 15;
+					}
+
+					processed.push(new Process(processes[waiting[0].name-1], waiting[0].color));
+					current = processed[processed.length-1];
+					counter = 0;
+					waiting.shift();
+				} else{
+					counter++;
+				}
+				--current.burst_time;
+				
+				temp_sort = group[proc].sort(function(a, b){
+					if(a.burst_time == b.burst_time){
+						return a.name - b.name;
+					} else{
+						return a.burst_time - b.burst_time;
+					}
+				});
+
+				for(var j = 0; j < temp_sort.length; j++){
+					if(current.burst_time > temp_sort[j].burst_time){
+						waiting.push(new Process(processes[current.name-1], color=current.color));
+						waiting[waiting.length-1].burst_time = current.burst_time;
+						ctx.fillStyle = current.color;
+						ctx.fillRect(queueX+5, startY+5, width, height-20);
+						ctx.fillStyle = "black";
+						ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
+						ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+						ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
+						queueX+=width;
+						if(queueX > 2750){
+							startY+=height;
+							queueX = startX + width + 15;
+						}
+						processed.push(new Process(processes[temp_sort[j].name-1], color=temp_sort[j].color));
+						countS[current.name-1]++;
+						current = processed[processed.length-1];
+						counter = 0;
+					} else{
+						waiting.push(new Process(processes[temp_sort[j].name-1], color=temp_sort[j].color));
+						waiting.sort(function(a, b){
+							if(a.burst_time == b.burst_time){
+								return a.name - b.name;
+							} else{
+								return a.burst_time - b.burst_time;
+							}
+						})
+					}
+				}
+				queueTotal++;
+				// console.log(temp_sort);
+			}
+			// --queueTotal;
+			console.log("q: "+queueTotal);
+			
+			processed = processed.concat(waiting);
+			// console.log(processed);
+			// console.log(waiting);
+			queueTotal--;
+			processed[processed.indexOf(current)].burst_time++;
+
+			for(var proc = processed.indexOf(current); proc < processed.length; proc++){
+				console.log(processed[proc]);
+				ctx.fillStyle = processed[proc].color;
+				ctx.fillRect(queueX+5, startY+5, width, height-20);
+				ctx.fillStyle = "black";
+				ctx.fillText("#"+processed[proc].name, queueX+(width/10), startY+(height/3) );
+				ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+				ctx.fillText("RT: 0", queueX+(width/10), startY+(height/6) );
+				sum_cpu += (queueTotal-processed[proc].arrival-countS[processed[proc].name-1]);
+				queueTotal+=processed[proc].burst_time;
+				queueX+=width;
+				if(queueX > 2750){
+					startY+=height;
+					queueX = startX + width + 15;
+				}
+			}
+			console.log(sum_cpu);
+			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+			ctx.fillText("AWT: "+ (sum_cpu/algorithms[i].queue.length), queueX+(width/10), startY+(height/3) );
 			startY+=height;
-			// console.log(temp2);
 
 		} else {
 			for(var j = 0; j < algorithms[i].queue.length; j++){
@@ -374,4 +380,4 @@ var roundrobin = new RoundRobin();
 roundrobin.setQueue(sample_process);
 algorithms.push(roundrobin);
 
-drawResources(algorithms);
+drawResources(algorithms, sample_process);
