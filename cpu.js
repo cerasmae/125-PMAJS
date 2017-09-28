@@ -17,10 +17,6 @@ function Process(array, color){
 	this.burst_time = array[2];
 	this.priority = array[3];
 	this.color = color;
-
-	this.processed = function(){
-		this.burst_time--;
-	}
 }
 
 function FCFS(){
@@ -31,16 +27,6 @@ function FCFS(){
 	this.setQueue = function(processes){
 		for(var i = 0; i < processes.length; i++){
 			this.queue.push(new Process(processes[i], color=randomColor({luminosity: 'light'})));
-		}
-	}
-
-	this.process = function(user){
-		if(this.queue.length > 0){
-			if(this.queue[0].burst_time <= 1){
-				this.queue.shift();
-			} else{
-				this.queue[0].processed();
-			}
 		}
 	}
 }
@@ -57,16 +43,6 @@ function SJF(){
 		this.queue.sort(function(a, b){
 			return a.burst_time - b.burst_time;
 		});
-	}
-
-	this.process = function(){
-		if(this.queue.length > 0){
-			if(this.queue[0].burst_time <= 1){
-				this.queue.shift();
-			} else{
-				this.queue[0].processed();
-			}
-		}
 	}
 }
 
@@ -99,16 +75,6 @@ function Priority(){
 			}	
 		});
 	}
-
-	this.process = function(){
-		if(this.queue.length > 0){
-			if(this.queue[0].burst_time <= 1){
-				this.queue.shift();
-			} else{
-				this.queue[0].processed();
-			}
-		}
-	}
 }
 
 function RoundRobin(){
@@ -123,20 +89,6 @@ function RoundRobin(){
 	this.setQueue = function(processes){
 		for(var i = 0; i < processes.length; i++){
 			this.queue.push(new Process(processes[i], color=randomColor({luminosity: 'light'})));
-		}
-	}
-
-	this.process = function(time){
-		if(this.queue[0].burst_time <= 1){
-			this.queue.shift();
-		} else{
-			if(this.quantum == 4){
-				this.i++;
-				this.quantum = 0;
-			} else{
-				this.quantum++;
-				this.queue[0].processed();
-			}
 		}
 	}
 }
@@ -157,7 +109,6 @@ function drawResources(algorithms, processes){
 		queueX = startX + width + 15;
 		sum_cpu = 0;
 		queueTotal = 0;
-		console.log(startY);
 		ctx.fillStyle = "black";
 		ctx.fillText(algorithms[i].name, startX+(width/4), startY+(height/2) );
 
@@ -173,8 +124,6 @@ function drawResources(algorithms, processes){
 
 			while(tempQ.length > 0){
 				for (let proc in tempQ){
-					// //console.log(algorithms[i].queue[proc].name);
-					//console.log("proc: "+proc);
 					if(algorithms[i].queue[proc] != null){
 						ctx.fillStyle = algorithms[i].queue[proc].color;
 						ctx.fillRect(queueX+5, startY+5, width, height-20);
@@ -207,18 +156,13 @@ function drawResources(algorithms, processes){
 						algorithms[i].queue.splice(proc, 1);
 					}
 				}
-
-				// //console.log(tempQ.length);
 			}
-			//console.log(count);
-			//console.log(final);
 			for(var j = 0; j < count.length; j++){
 				sum_cpu += (final[j]-(count[j]*4));
 			}
 			ctx.fillText("AWT: "+sum_cpu/20, queueX+(width/10), startY+(height/3) );
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 			startY+=height;
-			// //console.log(algorithms[i].queue);
 		} else if( algorithms[i].name == "SRPT" ){
 			var processed = [];
 			var waiting = [];
@@ -229,20 +173,63 @@ function drawResources(algorithms, processes){
 				countS[a] = 0;
 			}
 
-			processed.push(new Process(processes[0], color=temp1[0].color));
-			temp1.shift();
-
 			var group = _.groupBy(temp1, "arrival");
 			var temp_sort = [];
 
+			for(var a = 0; a < group[0].length; a++){
+				waiting.push(new Process(processes[group[0][a].name-1], color=group[0][a].color));
+			}
+
+			waiting.sort(function(a, b){
+				if(a.burst_time == b.burst_time){
+					return a.name - b.name;
+				} else{
+					return a.burst_time - b.burst_time;
+				}
+			});
+
+			processed.push(new Process(processes[waiting[0].name-1], color=waiting[0].color));
+			waiting.shift();
+
+			delete group[0];
+
 			var current = processed[0];
 			var counter = 0;
-			// count[0]++;
+
+			ctx.fillStyle = current.color;
+			ctx.fillRect(queueX+5, startY+5, width, height-20);
+			ctx.fillStyle = "black";
+			ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
+			ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+			ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
+
+			var b = 1;
+
+			++queueTotal;
+			--current.burst_time;
 
 			for(let proc in group){
+				temp_sort = group[proc].sort(function(a, b){
+					if(a.burst_time == b.burst_time){
+						return a.name - b.name;
+					} else{
+						return a.burst_time - b.burst_time;
+					}
+				});
+
+				for(var j = 0; j < temp_sort.length; j++){
+					waiting.push(new Process(processes[temp_sort[j].name-1], color=temp_sort[j].color));
+				}
+
+				waiting.sort(function(a, b){
+					if(a.burst_time == b.burst_time){
+						return a.name - b.name;
+					} else{
+						return a.burst_time - b.burst_time;
+					}
+				});
+
 				if(current.burst_time < 1){
-					console.log("curr:");
-					console.log(current);
 					ctx.fillStyle = current.color;
 					ctx.fillRect(queueX+5, startY+5, width, height-20);
 					ctx.fillStyle = "black";
@@ -254,68 +241,62 @@ function drawResources(algorithms, processes){
 						startY+=height;
 						queueX = startX + width + 15;
 					}
-
 					processed.push(new Process(processes[waiting[0].name-1], waiting[0].color));
+					processed[processed.length-1].burst_time = waiting[0].burst_time;
 					current = processed[processed.length-1];
 					counter = 0;
 					waiting.shift();
-				} else{
-					counter++;
-				}
-				--current.burst_time;
-				
-				temp_sort = group[proc].sort(function(a, b){
-					if(a.burst_time == b.burst_time){
-						return a.name - b.name;
-					} else{
-						return a.burst_time - b.burst_time;
-					}
-				});
 
-				for(var j = 0; j < temp_sort.length; j++){
-					if(current.burst_time > temp_sort[j].burst_time){
-						waiting.push(new Process(processes[current.name-1], color=current.color));
-						waiting[waiting.length-1].burst_time = current.burst_time;
+				} else if(current.burst_time > waiting[0].burst_time){
+					waiting.push(new Process(processes[current.name-1], color=current.color));
+					waiting[waiting.length-1].burst_time = current.burst_time;
+
+					if(b == 1){
+						b = 2;
+						queueX+=width;
+						queueTotal--;
+					} else {
 						ctx.fillStyle = current.color;
 						ctx.fillRect(queueX+5, startY+5, width, height-20);
 						ctx.fillStyle = "black";
 						ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
-						ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+						ctx.fillText("WT: "+(queueTotal-counter), queueX+(width/12), startY+(height*0.80) );
 						ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
 						queueX+=width;
-						if(queueX > 2750){
-							startY+=height;
-							queueX = startX + width + 15;
-						}
-						processed.push(new Process(processes[temp_sort[j].name-1], color=temp_sort[j].color));
-						countS[current.name-1]++;
-						current = processed[processed.length-1];
-						counter = 0;
-					} else{
-						waiting.push(new Process(processes[temp_sort[j].name-1], color=temp_sort[j].color));
-						waiting.sort(function(a, b){
-							if(a.burst_time == b.burst_time){
-								return a.name - b.name;
-							} else{
-								return a.burst_time - b.burst_time;
-							}
-						})
 					}
+					
+					if(queueX > 2750){
+						startY+=height;
+						queueX = startX + width + 15;
+					}
+
+					console.log(current);
+
+					processed.push(new Process(processes[waiting[0].name-1], color=waiting[0].color));
+					countS[current.name-1]++;
+					current = processed[processed.length-1];
+					counter = 0;
+
+					console.log(current);
+
+					waiting.shift();
+
+				} else{
+					++counter;
 				}
-				queueTotal++;
-				// console.log(temp_sort);
+				
+				++queueTotal;
+				--current.burst_time;
 			}
-			// --queueTotal;
-			console.log("q: "+queueTotal);
 			
 			processed = processed.concat(waiting);
-			// console.log(processed);
-			// console.log(waiting);
 			queueTotal--;
 			processed[processed.indexOf(current)].burst_time++;
 
+			// console.log(waiting);
+
 			for(var proc = processed.indexOf(current); proc < processed.length; proc++){
-				console.log(processed[proc]);
+				// console.log(processed[proc]);
 				ctx.fillStyle = processed[proc].color;
 				ctx.fillRect(queueX+5, startY+5, width, height-20);
 				ctx.fillStyle = "black";
@@ -323,13 +304,15 @@ function drawResources(algorithms, processes){
 				ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 				ctx.fillText("RT: 0", queueX+(width/10), startY+(height/6) );
 				sum_cpu += (queueTotal-processed[proc].arrival-countS[processed[proc].name-1]);
-				queueTotal+=processed[proc].burst_time;
+				queueTotal+=(processed[proc].burst_time+counter);
 				queueX+=width;
 				if(queueX > 2750){
 					startY+=height;
 					queueX = startX + width + 15;
 				}
+				counter = 0;
 			}
+
 			console.log(sum_cpu);
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 			ctx.fillText("AWT: "+ (sum_cpu/algorithms[i].queue.length), queueX+(width/10), startY+(height/3) );
