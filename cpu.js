@@ -96,7 +96,7 @@ function RoundRobin(){
 function drawResources(algorithms, processes){
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	var height = canvas.height/10;
-	var width = 80;
+	var width = 100;
 	var startX = 15;
 	var startY = 0;
 	var queueX = startX;
@@ -114,11 +114,12 @@ function drawResources(algorithms, processes){
 
 		if( algorithms[i].name == "RR" ){
 			var tempQ = algorithms[i].queue;
+			var len = algorithms[i].queue.length;
 			var k = 0;
 			var count = [];
 			var final = [];
 
-			for(var j = 0; j < 20; j++){
+			for(var j = 0; j < len; j++){
 				count[j] = 0;
 			}
 
@@ -129,18 +130,18 @@ function drawResources(algorithms, processes){
 						ctx.fillRect(queueX+5, startY+5, width, height-20);
 						ctx.fillStyle = "black";
 						ctx.fillText("#"+algorithms[i].queue[proc].name, queueX+(width/10), startY+(height/3) );
-						ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+						ctx.fillText("WT: "+queueTotal+"ms", queueX+(width/12), startY+(height*0.80) );
 
 						if(algorithms[i].queue[proc].burst_time <= 4){
 							final[algorithms[i].queue[proc].name-1] = queueTotal;
 							queueTotal += algorithms[i].queue[proc].burst_time;
-							ctx.fillText("RT: 0", queueX+(width/10), startY+(height/6) );
+							ctx.fillText("RT: 0ms", queueX+(width/10), startY+(height/6) );
 							algorithms[i].queue[proc] = null;
 						} else{
 							queueTotal += 4;
 							count[algorithms[i].queue[proc].name-1]++;
 							algorithms[i].queue[proc].burst_time-=4;
-							ctx.fillText("RT: "+algorithms[i].queue[proc].burst_time, queueX+(width/10), startY+(height/6) );
+							ctx.fillText("RT: "+algorithms[i].queue[proc].burst_time+"ms", queueX+(width/10), startY+(height/6) );
 						}
 						queueX+=width;
 						if(queueX > 2750){
@@ -160,7 +161,8 @@ function drawResources(algorithms, processes){
 			for(var j = 0; j < count.length; j++){
 				sum_cpu += (final[j]-(count[j]*4));
 			}
-			ctx.fillText("AWT: "+sum_cpu/20, queueX+(width/10), startY+(height/3) );
+			console.log("RR: "+sum_cpu);
+			ctx.fillText("AWT: "+(sum_cpu/len)+"ms", queueX+(width/10), startY+(height/3) );
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 			startY+=height;
 		} else if( algorithms[i].name == "SRPT" ){
@@ -197,16 +199,18 @@ function drawResources(algorithms, processes){
 			var counter = 0;
 
 			ctx.fillStyle = current.color;
+			// ctx.fillStyle = "green";
 			ctx.fillRect(queueX+5, startY+5, width, height-20);
 			ctx.fillStyle = "black";
 			ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
-			ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
-			ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
-
+			ctx.fillText("WT: "+queueTotal+"ms", queueX+(width/12), startY+(height*0.80) );
+			ctx.fillText("RT: "+current.burst_time+"ms", queueX+(width/10), startY+(height/6) );
 			var b = 1;
 
 			++queueTotal;
 			--current.burst_time;
+
+			var flag = false;
 
 			for(let proc in group){
 				temp_sort = group[proc].sort(function(a, b){
@@ -230,17 +234,22 @@ function drawResources(algorithms, processes){
 				});
 
 				if(current.burst_time < 1){
-					ctx.fillStyle = current.color;
+					// ctx.fillStyle = current.color;
+					flag = true;
+					ctx.fillStyle = "red";
 					ctx.fillRect(queueX+5, startY+5, width, height-20);
 					ctx.fillStyle = "black";
 					ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
-					ctx.fillText("WT: "+ (queueTotal-counter), queueX+(width/12), startY+(height*0.80) );
-					ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
+					ctx.fillText("WT: "+ (queueTotal-counter)+"ms", queueX+(width/12), startY+(height*0.80) );
+					ctx.fillText("RT: "+current.burst_time+"ms", queueX+(width/10), startY+(height/6) );
 					queueX+=width;
 					if(queueX > 2750){
 						startY+=height;
 						queueX = startX + width + 15;
 					}
+					console.log(current.name, counter);
+					// countS[current.name-1]+=counter;
+					sum_cpu+=((queueTotal-counter)-current.arrival-countS[current.name-1]);
 					processed.push(new Process(processes[waiting[0].name-1], waiting[0].color));
 					processed[processed.length-1].burst_time = waiting[0].burst_time;
 					current = processed[processed.length-1];
@@ -257,11 +266,12 @@ function drawResources(algorithms, processes){
 						queueTotal--;
 					} else {
 						ctx.fillStyle = current.color;
+						// ctx.fillStyle = "yellow";
 						ctx.fillRect(queueX+5, startY+5, width, height-20);
 						ctx.fillStyle = "black";
 						ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
-						ctx.fillText("WT: "+(queueTotal-counter), queueX+(width/12), startY+(height*0.80) );
-						ctx.fillText("RT: "+current.burst_time, queueX+(width/10), startY+(height/6) );
+						ctx.fillText("WT: "+(queueTotal-counter)+"ms", queueX+(width/12), startY+(height*0.80) );
+						ctx.fillText("RT: "+current.burst_time+"ms", queueX+(width/10), startY+(height/6) );
 						queueX+=width;
 					}
 					
@@ -273,7 +283,7 @@ function drawResources(algorithms, processes){
 					console.log(current);
 
 					processed.push(new Process(processes[waiting[0].name-1], color=waiting[0].color));
-					countS[current.name-1]++;
+					countS[current.name-1]+=(++counter);
 					current = processed[processed.length-1];
 					counter = 0;
 
@@ -293,16 +303,23 @@ function drawResources(algorithms, processes){
 			queueTotal--;
 			processed[processed.indexOf(current)].burst_time++;
 
+			if(!flag){
+				queueTotal-=counter;
+			}
+
 			// console.log(waiting);
+
+			console.log("counter: "+counter);
 
 			for(var proc = processed.indexOf(current); proc < processed.length; proc++){
 				// console.log(processed[proc]);
 				ctx.fillStyle = processed[proc].color;
+				// ctx.fillStyle = "cyan";
 				ctx.fillRect(queueX+5, startY+5, width, height-20);
 				ctx.fillStyle = "black";
 				ctx.fillText("#"+processed[proc].name, queueX+(width/10), startY+(height/3) );
-				ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
-				ctx.fillText("RT: 0", queueX+(width/10), startY+(height/6) );
+				ctx.fillText("WT: "+queueTotal+"ms", queueX+(width/12), startY+(height*0.80) );
+				ctx.fillText("RT: 0"+"ms", queueX+(width/10), startY+(height/6) );
 				sum_cpu += (queueTotal-processed[proc].arrival-countS[processed[proc].name-1]);
 				queueTotal+=(processed[proc].burst_time+counter);
 				queueX+=width;
@@ -313,9 +330,10 @@ function drawResources(algorithms, processes){
 				counter = 0;
 			}
 
-			console.log(sum_cpu);
+			console.log("SRPT: "+sum_cpu);
+			console.log(countS);
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
-			ctx.fillText("AWT: "+ (sum_cpu/algorithms[i].queue.length), queueX+(width/10), startY+(height/3) );
+			ctx.fillText("AWT: "+ (sum_cpu/algorithms[i].queue.length)+"ms", queueX+(width/10), startY+(height/3) );
 			startY+=height;
 
 		} else {
@@ -324,13 +342,13 @@ function drawResources(algorithms, processes){
 				ctx.fillRect(queueX+5, startY+5, width, height-20);
 				ctx.fillStyle = "black";
 				ctx.fillText("#"+algorithms[i].queue[j].name, queueX+(width/10), startY+(height/4) );
-				ctx.fillText("WT: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
+				ctx.fillText("WT: "+queueTotal+"ms", queueX+(width/12), startY+(height*0.80) );
 				queueTotal += algorithms[i].queue[j].burst_time;
 				sum_cpu += queueTotal;
 				queueX+=width;
 			}
 			sum_cpu -= queueTotal;
-			ctx.fillText("AWT: "+(sum_cpu/algorithms[i].queue.length), queueX+(width/10), startY+(height/4) );
+			ctx.fillText("AWT: "+(sum_cpu/algorithms[i].queue.length)+"ms", queueX+(width/10), startY+(height/4) );
 			ctx.fillText("End: "+queueTotal, queueX+(width/12), startY+(height*0.80) );
 			startY+=height;
 		}
@@ -340,8 +358,9 @@ function drawResources(algorithms, processes){
 }
 
 /////////////////////////////////////////////
-var sample_process = JSON.parse(one);
+// var sample_process = JSON.parse(one);
 // var sample_process = JSON.parse(two);
+var sample_process = JSON.parse(practice);
 
 var fcfs = new FCFS();
 fcfs.setQueue(sample_process);
