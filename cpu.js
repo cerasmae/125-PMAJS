@@ -234,9 +234,9 @@ function drawResources(algorithms, processes){
 				});
 
 				if(current.burst_time < 1){
-					// ctx.fillStyle = current.color;
+					ctx.fillStyle = current.color;
 					flag = true;
-					ctx.fillStyle = "red";
+					// ctx.fillStyle = "red";
 					ctx.fillRect(queueX+5, startY+5, width, height-20);
 					ctx.fillStyle = "black";
 					ctx.fillText("#"+current.name, queueX+(width/10), startY+(height/3) );
@@ -359,8 +359,8 @@ function drawResources(algorithms, processes){
 
 /////////////////////////////////////////////
 // var sample_process = JSON.parse(one);
-// var sample_process = JSON.parse(two);
-var sample_process = JSON.parse(practice);
+var sample_process = JSON.parse(two);
+// var sample_process = JSON.parse(practice);
 
 var fcfs = new FCFS();
 fcfs.setQueue(sample_process);
